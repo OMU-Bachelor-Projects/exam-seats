@@ -3,7 +3,10 @@ from flask.templating import render_template
 
 app = Flask(__name__)
 
-#ddddd
+@app.route("/results")
+def results():
+    return render_template('results.html')
+
 @app.route("/")
-def hello_world():
+def index():
     return render_template('index.html')
