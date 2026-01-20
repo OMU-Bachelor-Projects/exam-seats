@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Sınav Dağıtım Sistemi</title>
+    <style>
+        /* Genel Sayfa Ayarları */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f0f2f5;
+            margin: 0;
+        }
+
+        /* Beyaz Ana Kutu */
+        .upload-container {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            text-align: center;
+            width: 400px;
+            border: 2px dashed #ccc;
+            transition: all 0.3s ease; /* Hover efekti için yumuşak geçiş */
+        }
+        .upload-container:hover {
+            border-color: #007bff;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+        }
+
+        h2 { margin-top: 0; color: #333; }
+
+        /* Dosya Seçme Butonu */
+        input[type="file"] {
+            margin: 20px 0;
+            display: block;
+            width: 100%;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+
+        /* YÜKLE Butonu */
+        button {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: background-color 0.2s;
+            width: 100%; /* Buton genişlesin */
+        }
+        button:hover { background-color: #218838; }
+
+        /* Yükleme Durum Mesajı */
+        #statusMessage { margin-top: 15px; font-size: 14px; min-height: 20px; }
+
+        /* Yeni Eklediğimiz Alarm Kutusu Stili */
+        .alarm-box {
+            margin-top: 25px;
+            padding: 15px;
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+            border-radius: 8px;
+            text-align: center;
+            width: 100%; /* Kutuya tam otursun */
+            box-sizing: border-box; /* Padding taşmasını engeller */
+        }
+    </style>
+</head>
+<body>
+
+<div class="upload-container">
+    <h2>Dosya Yükleme Paneli</h2>
+    <p>CSV veya Sınav Programı dosyasını seçin</p>
+
+    <input type="file" id="fileInput" />
+    <button onclick="uploadFile()">YÜKLE</button>
+
+    <div id="statusMessage"></div>
+
+    <div class="alarm-box">
+        <strong>📢 Sistem Durumu:</strong>
+        <div id="canliAlarmKutusu" style="margin-top: 5px; font-weight: normal;">
+            Bağlantı bekleniyor...
+        </div>
+    </div>
+</div>
+
+<script>
+    async function uploadFile() {
+        const fileInput = document.getElementById('fileInput');
+        const statusDiv = document.getElementById('statusMessage');
+
+        if(fileInput.files.length === 0) {
+            statusDiv.innerHTML = "<span style='color:red'>⚠️ Lütfen bir dosya seçin!</span>";
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append("file", fileInput.files[0]);
+
+        statusDiv.innerHTML = "<span style='color:blue'>⏳ Yükleniyor...</span>";
+
+        try {
+            const response = await fetch('http://localhost:8080/api/upload', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (response.ok) {
+                const result = await response.text();
+                statusDiv.innerHTML = "<span style='color:green'>✅ " + result + "</span>";
+            } else {
+                statusDiv.innerHTML = "<span style='color:red'>❌ Yükleme hatası!</span>";
+            }
+        } catch (error) {
+            console.error(error);
+            statusDiv.innerHTML = "<span style='color:red'>❌ Sunucu hatası! Bağlantıyı kontrol edin.</span>";
+        }
+    }
+
+    // Alarm Sistemi (Her 3 saniyede bir günceller)
+    setInterval(async function() {
+        try {
+            const response = await fetch('http://localhost:8080/api/alarm-durumu');
+            if(response.ok) {
+                const mesaj = await response.text();
+                document.getElementById('canliAlarmKutusu').innerText = mesaj;
+            }
+        } catch (error) {
+            // Hata olursa kullanıcıyı rahatsız etmeden konsola yazalım
+            console.log("Alarm sunucusuna ulaşılamadı");
+        }
+    }, 3000);
+</script>
+</body>
+</html>
